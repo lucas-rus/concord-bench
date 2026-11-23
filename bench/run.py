@@ -12,6 +12,9 @@ Conditions:
   parallel-concord    all tickets at once, coordinated by Concord
                       (contract notices + finish gate + peer merge)
   parallel-contracts  ablation: Concord's contract layer only
+  parallel-regions    Concord's contract layer plus region coherence (overlaps
+                      detected after every edit and moved or handed off; no
+                      peer merge, no conflict markers)
   parallel-peeronly   ablation: Concord's peer merge only
 
 Each run appends one JSON line to OUT/results.jsonl (see PROTOCOL.md for the
@@ -45,6 +48,7 @@ CONDITIONS = {
     "parallel-integrator": ["--mode", "off"],
     "parallel-concord": ["--mode", "enforce", "--peer-merge"],
     "parallel-contracts": ["--mode", "enforce"],
+    "parallel-regions": ["--mode", "enforce", "--regions"],
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
 }
 QUOTA_MARKERS = ("free-limit", "free usage limit", "rate_limit", "rate limit", "usage limit", "quota")
