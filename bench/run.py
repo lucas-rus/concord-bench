@@ -6,6 +6,9 @@ Conditions:
   sequential          the tickets one after another, one agent each, each
                       starting from the previous result (no parallelism)
   parallel-off        all tickets at once, isolated worktrees, no coordination
+  parallel-integrator all tickets at once without coordination, then one extra
+                      agent merges the branches that conflicted and resolves
+                      the conflicts (the realistic no-Concord workflow)
   parallel-concord    all tickets at once, coordinated by Concord
                       (contract notices + finish gate + peer merge)
   parallel-contracts  ablation: Concord's contract layer only
@@ -39,6 +42,7 @@ GIT_ID = ["-c", "user.name=concord-bench", "-c", "user.email=concord-bench@local
 CONDITIONS = {
     "sequential": ["--mode", "off"],
     "parallel-off": ["--mode", "off"],
+    "parallel-integrator": ["--mode", "off"],
     "parallel-concord": ["--mode", "enforce", "--peer-merge"],
     "parallel-contracts": ["--mode", "enforce"],
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
@@ -66,6 +70,20 @@ def ticket_prompt(ticket: dict, tester: Path) -> str:
     )
 
 
+def integrator_prompt(branches: list[str], tester: Path) -> str:
+    listing = "\n".join(f"  - {b}" for b in branches)
+    return (
+        "You are the integrator of a team that implemented a CommonMark Markdown to HTML converter in pure Python "
+        "(package `cmark` in `src/cmark`; read README.md for the design). Several developers worked in parallel on "
+        "separate branches; the branches below could not be merged automatically because they conflict with work "
+        f"that is already in your branch:\n{listing}\n\n"
+        "Merge each of them into your branch with `git merge --no-edit <branch>`, one at a time, and resolve every "
+        "conflict so that the features of both sides keep working (do not simply take one side). Commit each merge "
+        f"(`git add -A && git commit --no-edit`). After each merge, run `{tester} -q tests` and fix what the merge "
+        "broke. Stop when all branches are merged; the goal is that as many tests as possible pass."
+    )
+
+
 def evaluate_rev(repo: Path, rev: str, python: str, sections: set[str] | None, scratch: Path) -> dict:
     if scratch.exists():
         git(["worktree", "remove", "--force", str(scratch)], repo, check=False)
@@ -77,7 +95,8 @@ def evaluate_rev(repo: Path, rev: str, python: str, sections: set[str] | None, s
         git(["worktree", "remove", "--force", str(scratch)], repo, check=False)
 
 
-def concord_run(args, repo: Path, base: str, tasks: list[dict], flags: list[str], out: Path, tester: Path) -> dict:
+def concord_run(args, repo: Path, base: str, tasks: list[dict], flags: list[str], out: Path, tester: Path,
+                extra_allow: list[str] | None = None) -> dict:
     tasks_file = out / "tasks.json"
     out.mkdir(parents=True, exist_ok=True)
     tasks_file.write_text(json.dumps(tasks, indent=2))
@@ -87,6 +106,8 @@ def concord_run(args, repo: Path, base: str, tasks: list[dict], flags: list[str]
         "--test-cmd", "true", "--allow", f"Bash({tester} *)", "--allow", f"Bash({tester})",
         "--out", str(out), "--max-wait-secs", "300",
     ]
+    for a in extra_allow or []:
+        cmd += ["--allow", a]
     r = subprocess.run(cmd, capture_output=True, text=True)
     (out / "concord.log").write_text(r.stdout + r.stderr)
     reports = sorted(out.glob("*/report.json"))
@@ -156,11 +177,14 @@ def main() -> int:
         shutil.copytree(PROJECT / "scaffold", repo, ignore=shutil.ignore_patterns("__pycache__", ".pytest_cache"))
         git(["init", "-q", "-b", "main"], repo)
         git(["add", "-A"], repo)
+        git(["config", "user.name", "concord-bench"], repo)
+        git(["config", "user.email", "concord-bench@localhost"], repo)
         git(["commit", "-q", "-m", "scaffold"], repo)
         base = git(["rev-parse", "HEAD"], repo)
         print(f"[{name}] start", file=sys.stderr, flush=True)
         started = time.time()
         reports = []
+        unmerged: list[str] = []
         alone: dict[str, dict] = {}
         try:
             if args.condition == "sequential":
@@ -179,8 +203,18 @@ def main() -> int:
                 rep = concord_run(args, repo, base, tasks, flags, work / "runs" / "team", tester)
                 reports.append(rep)
                 final = git(["rev-parse", f"concord/{rep['run_id']}/integration"], repo)
+                team_run = rep["run_id"]
+                if args.condition == "parallel-integrator" and rep["integration"]["conflicts"]:
+                    branches = [f"concord/{team_run}/{n}" for n in rep["integration"]["conflicts"]]
+                    print(f"[{name}] integrator: {len(branches)} branches", file=sys.stderr, flush=True)
+                    irep = concord_run(args, repo, final, [{"name": "integrator", "prompt": integrator_prompt(branches, tester)}],
+                                       flags, work / "runs" / "integrator", tester, extra_allow=["Bash(git *)"])
+                    reports.append(irep)
+                    final = git(["rev-parse", f"concord/{irep['run_id']}/integration"], repo)
+                    unmerged = [b for b in branches
+                                if subprocess.run(["git", "merge-base", "--is-ancestor", b, final], cwd=repo).returncode != 0]
                 for t in tickets:
-                    branch = f"concord/{rep['run_id']}/{t['name']}"
+                    branch = f"concord/{team_run}/{t['name']}"
                     alone[t["name"]] = evaluate_rev(repo, branch, args.python, set(t["sections"]), work / "eval")
         except Exception as e:  # noqa: BLE001
             print(f"[{name}] FAILED: {e}", file=sys.stderr, flush=True)
@@ -197,7 +231,8 @@ def main() -> int:
             total = sum(v["total"] for s, v in together["sections"].items() if s in own)
             per_ticket[t["name"]] = {"alone": alone[t["name"]]["passed"], "together": tog, "total": total}
         agents = [a for r in reports for a in r["agents"]]
-        conflicts = sorted({n for r in reports for n in r["integration"]["conflicts"]})
+        conflicts = sorted(reports[0]["integration"]["conflicts"]) if args.condition != "sequential" else \
+            sorted({n for r in reports for n in r["integration"]["conflicts"]})
         qerr = sum(quota_errors(Path(r["_dir"])) for r in reports)
         errors = sum(bool(a.get("is_error")) for a in agents)
         row = {
@@ -215,6 +250,7 @@ def main() -> int:
             "integration_loss": sum(max(0, v["alone"] - v["together"]) for v in per_ticket.values()),
             "integration_net": sum(v["alone"] - v["together"] for v in per_ticket.values()),
             "merge_conflicts": conflicts,
+            "unmerged_after_integrator": unmerged,
             "wall_seconds": round(wall, 1),
             "agent_seconds": round(sum(a["seconds"] for a in agents), 1),
             "cost_usd": round(sum(a["cost_usd"] for a in agents), 4),

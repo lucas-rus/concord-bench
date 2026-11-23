@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import mannwhitneyu
 
-ORDER = ["sequential", "parallel-off", "parallel-contracts", "parallel-peeronly", "parallel-concord"]
+ORDER = ["sequential", "parallel-off", "parallel-integrator", "parallel-contracts", "parallel-peeronly", "parallel-concord"]
 METRICS = [
     ("passed", "spec examples passed (of 652)"),
     ("integration_loss", "integration loss (examples)"),
@@ -113,6 +113,7 @@ def main() -> int:
         ("H1", "passed", "parallel-concord", "parallel-off", "more spec examples passed"),
         ("H2", "integration_loss", "parallel-concord", "parallel-off", "smaller integration loss"),
         ("H3", "wall_min", "parallel-concord", "sequential", "shorter wall time"),
+        ("H5", "passed", "parallel-concord", "parallel-integrator", "more spec examples passed than with an integrator"),
     ]
     results = []
     for h, key, a, b, claim in tests:

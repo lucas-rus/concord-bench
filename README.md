@@ -18,6 +18,7 @@ Twelve agents build a [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) M
 |---|---|
 | `sequential` | one ticket after another (quality reference, no parallelism) |
 | `parallel-off` | 12 agents at once in isolated worktrees, merged at the end |
+| `parallel-integrator` | like `parallel-off`, then one extra agent merges the conflicting branches and resolves the conflicts |
 | `parallel-concord` | 12 agents at once, coordinated by Concord |
 | `parallel-contracts`, `parallel-peeronly` | ablations of Concord's two mechanisms |
 
