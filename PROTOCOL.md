@@ -41,7 +41,7 @@ All conditions use the same scaffold, tickets, agent harness and model. Every ag
 
 ## Validity
 
-A run is **invalid** and repeated if any agent ended with a provider quota or rate-limit error (detected automatically, `quota_errors`). It is also invalid if the run itself failed (harness error). Invalid runs are reported, but not analysed.
+A run is **invalid** and repeated if any agent ended with a provider quota or rate-limit error (detected automatically, `quota_errors`). It is also invalid if the run itself failed or an agent never started (harness errors, `start_failures`). Invalid runs are reported, but not analysed.
 
 ## Hypotheses
 
@@ -70,4 +70,5 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
 
 - **2026-11-23, after the first pilot run, before the main study.** Integration loss was first defined as the net sum of `alone - together`. The pilot showed that tickets gain from each other in the integrated result (for example, emphasis passed 40 examples alone and 132 together once code spans and links were merged). The net sum therefore lets these gains cancel out real losses, and it was -157 in the pilot. H2 now uses losses only, clamped per ticket, as defined above; the net sum is kept as `integration_net`. No main-study run had been made when this change was made.
 - **2026-11-23, after pilot run 2 (`parallel-off`), before the main study.** Added the condition `parallel-integrator` and hypothesis H5. In `parallel-off`, branches that conflict are dropped, which no real team would do. In `parallel-integrator`, one extra agent (same model) merges those branches after the team has finished and resolves the conflicts. This is the realistic workflow without Concord and a stronger baseline. Its wall time includes the integrator. `merge_conflicts` counts the team's conflicts; `unmerged_after_integrator` lists the branches the integrator still did not merge.
+- **2026-11-23, after pilot run 2.** The first `parallel-concord` pilot run turned out to be invalid: 4 of its 12 agents (emphasis, code-blocks, code-spans, raw-html-breaks) never started, because OpenCode's local server failed to start ("Standalone server exited before reporting readiness"). Their tickets were done in part by other agents, and the run still reached 554/652, but it does not measure the intended condition. From now on, a run in which an agent never started is invalid (`start_failures`). Concord now retries the start of an OpenCode turn when its server fails to start (concord commit after 31c7432). The pilot run is reported but not analysed.
 

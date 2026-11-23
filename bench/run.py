@@ -235,6 +235,8 @@ def main() -> int:
             sorted({n for r in reports for n in r["integration"]["conflicts"]})
         qerr = sum(quota_errors(Path(r["_dir"])) for r in reports)
         errors = sum(bool(a.get("is_error")) for a in agents)
+        # Agents that never started a session (e.g. the agent CLI failed to start): a harness error.
+        start_failures = sorted(a["name"] for a in agents if not a.get("session_id"))
         row = {
             "run": name,
             "condition": args.condition,
@@ -261,7 +263,8 @@ def main() -> int:
             "resumed": sum(a.get("resumed", 0) for a in agents),
             "agent_errors": errors,
             "quota_errors": qerr,
-            "valid": qerr == 0,
+            "start_failures": start_failures,
+            "valid": qerr == 0 and not start_failures,
             "result_commit": final,
         }
         with (args.out / "results.jsonl").open("a") as fh:
