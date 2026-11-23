@@ -46,6 +46,8 @@ def load(paths: list[Path], model: str | None) -> list[dict]:
                 continue
             r.setdefault("valid", False)
             if "passed" in r:
+                # Losses only (PROTOCOL amendment 2026-11-23), also for rows written before it.
+                r["integration_loss"] = sum(max(0, v["alone"] - v["together"]) for v in r["per_ticket"].values())
                 r["conflicts"] = len(r.get("merge_conflicts", []))
                 r["wall_min"] = r["wall_seconds"] / 60
             rows.append(r)

@@ -33,7 +33,7 @@ All conditions use the same scaffold, tickets, agent harness and model. Every ag
 ## Metrics (per run)
 
 - **Primary: `passed`**, the spec examples passed by the integrated result (0-652).
-- **Integration loss.** For each ticket, the examples of its own sections passed on the agent's own branch ("alone") minus on the integrated result ("together"), summed over tickets.
+- **Integration loss.** For each ticket, the examples of its own sections that pass on the agent's own branch ("alone") but are lost on the integrated result ("together"): `max(0, alone - together)`, summed over tickets. The net difference `alone - together` (without the clamp) is reported as `integration_net`, descriptively.
 - **Merge conflicts.** The number of agent branches that could not be merged into the integration branch.
 - **Wall time** of the run; **agent time** (sum over agents); **cost**; **turns**.
 - **Concord activity**: notices, finish-gate blocks, merges, resumed agents.
@@ -63,3 +63,8 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
 ## Deviations from this protocol
 
 (none yet)
+
+## Amendments
+
+- **2026-11-23, after the first pilot run, before the main study.** Integration loss was first defined as the net sum of `alone - together`. The pilot showed that tickets gain from each other in the integrated result (for example, emphasis passed 40 examples alone and 132 together once code spans and links were merged). The net sum therefore lets these gains cancel out real losses, and it was -157 in the pilot. H2 now uses losses only, clamped per ticket, as defined above; the net sum is kept as `integration_net`. No main-study run had been made when this change was made.
+
