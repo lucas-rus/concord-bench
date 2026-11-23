@@ -186,6 +186,7 @@ def main() -> int:
         reports = []
         unmerged: list[str] = []
         alone: dict[str, dict] = {}
+        eval_seconds = 0.0
         try:
             if args.condition == "sequential":
                 head = base
@@ -194,7 +195,9 @@ def main() -> int:
                                       flags, work / "runs" / t["name"], tester)
                     reports.append(rep)
                     head = git(["rev-parse", f"concord/{rep['run_id']}/integration"], repo)
+                    t0 = time.time()
                     alone[t["name"]] = evaluate_rev(repo, head, args.python, set(t["sections"]), work / "eval")
+                    eval_seconds += time.time() - t0
                     print(f"[{name}] {t['name']}: {alone[t['name']]['passed']}/{alone[t['name']]['total']}",
                           file=sys.stderr, flush=True)
                 final = head
@@ -215,13 +218,16 @@ def main() -> int:
                                 if subprocess.run(["git", "merge-base", "--is-ancestor", b, final], cwd=repo).returncode != 0]
                 for t in tickets:
                     branch = f"concord/{team_run}/{t['name']}"
+                    t0 = time.time()
                     alone[t["name"]] = evaluate_rev(repo, branch, args.python, set(t["sections"]), work / "eval")
+                    eval_seconds += time.time() - t0
         except Exception as e:  # noqa: BLE001
             print(f"[{name}] FAILED: {e}", file=sys.stderr, flush=True)
             with (args.out / "results.jsonl").open("a") as fh:
                 fh.write(json.dumps({"run": name, "condition": args.condition, "model": args.model, "error": str(e)[:500], "valid": False}) + "\n")
             continue
-        wall = time.time() - started
+        # Development time only: the scoring of branches in between is not counted.
+        wall = time.time() - started - eval_seconds
         together = evaluate_rev(repo, final, args.python, None, work / "eval")
         git(["branch", "-f", "result", final], repo)
         per_ticket = {}
