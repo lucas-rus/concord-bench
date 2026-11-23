@@ -76,3 +76,19 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
 - **2026-11-23, after the pilot.** Added `parallel-regions` (Concord's contract layer plus region coherence, see concord `docs/research/region-coherence.md`). It is exploratory: no confirmatory hypothesis until its pilot run is reported.
 
 - **2026-11-24, during the Haiku pilot.** The free Big Pickle quota ran out, so the pilot continued with Claude Haiku (`claude-haiku-5-5`, Claude Code, $1.00 budget per agent). Four Haiku runs (`parallel-off` 1, `parallel-integrator` 1, `sequential` 1, `parallel-regions` 2) ran into the Claude plan's 5-hour usage limit ("You've hit your 5-hour limit"), which the quota check did not recognise, so they were wrongly marked valid. They are now marked invalid and rerun. The quota markers now include this message, and a Claude Code result that ended in an API error before any cost counts as a provider failure. `parallel-regions` run 2 uses a later Concord build than run 1 (hand-offs batched and not counted toward the gate block limit).
+- **2026-11-24, after the Haiku pilot, before any main-study run.** Plan of the main study, fixed before its first run:
+  - **Model.** `claude-haiku-5-5` through Claude Code becomes the primary model, with a $1.00 budget per agent. The free Big Pickle quota is exhausted, and its runs were unstable (start failures, quota). Big Pickle results stay as a pilot.
+  - **Concord configuration under test.** H1–H3 and H5 are tested for `parallel-regions`, which is Concord's contract layer plus region coherence, frozen at concord commit d0c2f20. Changing anything in Concord after this point voids the main study.
+    - Reason: the pilot showed that region coherence removes merge conflicts without peer merge, and it is the method the thesis proposes.
+    - Region coherence is tested in place of `parallel-concord`, not in addition to it. With n = 5 against 5, the smallest two-sided Mann-Whitney p is 0.0079, so Holm over more than 6 hypotheses could never reject.
+    - `parallel-concord` (contracts plus peer merge) is reported descriptively, with n = 3.
+  - **Conditions and n.** n = 5 valid runs each for `sequential`, `parallel-off`, `parallel-integrator` and `parallel-regions`; n = 3 for `parallel-concord`. Runs are numbered from 11.
+  - **Order.** Runs are interleaved by replicate, one run of every condition per round. Time-of-day and provider effects then spread evenly over conditions.
+  - **Cost** (USD, from the agents' reported usage) becomes a reported metric. It is descriptive, with no hypothesis.
+  - **Usage limits.** A run that hits the Claude plan's usage limit is invalid and repeated after a pause.
+  - **Pilot** (one run each, Haiku, before this amendment), reported separately:
+    - `sequential`: 652, 25.3 min, $0.54;
+    - `parallel-off`: 151, 4.8 min, $0.85;
+    - `parallel-integrator`: 649, 12.8 min, $1.89;
+    - `parallel-concord`: 650, 11.2 min, $4.70;
+    - `parallel-regions`, three builds as the method was being fixed: 567 (8.5 min, $2.49), 644 (10.5 min, $2.83), 621 (8.1 min, $2.98).
