@@ -51,7 +51,8 @@ CONDITIONS = {
     "parallel-regions": ["--mode", "enforce", "--regions"],
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
 }
-QUOTA_MARKERS = ("free-limit", "free usage limit", "rate_limit", "rate limit", "usage limit", "quota")
+QUOTA_MARKERS = ("free-limit", "free usage limit", "rate_limit", "rate limit", "usage limit", "quota",
+                 "hour limit", "weekly limit", "limit · resets", "hit your limit")
 
 
 def git(args: list[str], cwd: Path, check: bool = True) -> str:
@@ -140,7 +141,12 @@ def quota_errors(run_dir: Path) -> int:
                 r = json.loads(f.read_text())
             except (json.JSONDecodeError, UnicodeDecodeError):
                 continue
-            if isinstance(r, dict) and r.get("is_error") and any(m in str(r.get("result", "")).lower() for m in QUOTA_MARKERS):
+            if isinstance(r, dict) and r.get("is_error") and (
+                any(m in str(r.get("result", "")).lower() for m in QUOTA_MARKERS)
+                # An API error before any work (no cost) is a provider failure,
+                # not an agent outcome: the run is not valid.
+                or (r.get("terminal_reason") == "api_error" and not r.get("total_cost_usd"))
+            ):
                 hit = True
         n += hit
     return n
