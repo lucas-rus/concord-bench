@@ -1,0 +1,62 @@
+[
+  {
+    "name": "headings",
+    "sections": ["Thematic breaks", "ATX headings", "Setext headings"],
+    "prompt": "Implement thematic breaks (`***`, `---`, `___`), ATX headings (`# Title`) and setext headings (underlined with `===` or `---`), as specified in CommonMark 0.31.2, sections 4.1-4.3: https://spec.commonmark.org/0.31.2/#thematic-breaks . Render them as `<hr />`, `<h1>`...`<h6>`."
+  },
+  {
+    "name": "code-blocks",
+    "sections": ["Indented code blocks", "Fenced code blocks", "Tabs"],
+    "prompt": "Implement indented code blocks and fenced code blocks (``` and ~~~ fences, info strings rendered as `class=\"language-...\"`), as specified in CommonMark 0.31.2, sections 4.4-4.5 (https://spec.commonmark.org/0.31.2/#indented-code-blocks), including the tab handling of section 2.2 (Tabs)."
+  },
+  {
+    "name": "html-blocks",
+    "sections": ["HTML blocks"],
+    "prompt": "Implement HTML blocks (the seven kinds of start and end conditions), as specified in CommonMark 0.31.2, section 4.6: https://spec.commonmark.org/0.31.2/#html-blocks . HTML blocks are passed through to the output unchanged."
+  },
+  {
+    "name": "link-refs",
+    "sections": ["Link reference definitions"],
+    "prompt": "Implement link reference definitions (`[label]: /url \"title\"`), as specified in CommonMark 0.31.2, section 4.7: https://spec.commonmark.org/0.31.2/#link-reference-definitions . Definitions are recognised at the start of paragraphs, removed from the output, and recorded (with case-insensitive, whitespace-normalised labels; the first definition of a label wins) so that reference links can use them."
+  },
+  {
+    "name": "blockquotes",
+    "sections": ["Block quotes"],
+    "prompt": "Implement block quotes (`> quoted`), including lazy continuation lines, as specified in CommonMark 0.31.2, section 5.1: https://spec.commonmark.org/0.31.2/#block-quotes . Render them as `<blockquote>`."
+  },
+  {
+    "name": "lists",
+    "sections": ["List items", "Lists"],
+    "prompt": "Implement list items and lists (bullet lists with `-`, `+`, `*`; ordered lists with `1.` or `1)` and start numbers; tight and loose lists), as specified in CommonMark 0.31.2, sections 5.2-5.3: https://spec.commonmark.org/0.31.2/#list-items . Render `<ul>`/`<ol start=\"...\">`/`<li>`; paragraphs in tight lists are rendered without `<p>` tags."
+  },
+  {
+    "name": "escapes-entities",
+    "sections": ["Backslash escapes", "Entity and numeric character references"],
+    "prompt": "Implement backslash escapes and entity and numeric character references (`&amp;`, `&#35;`, `&#x22;`, all HTML5 named entities), as specified in CommonMark 0.31.2, sections 2.4 and 2.5: https://spec.commonmark.org/0.31.2/#backslash-escapes . Note where escapes and entities are recognised (also in link destinations, titles and code fence info strings) and where they are not (code spans, code blocks, autolinks, raw HTML)."
+  },
+  {
+    "name": "code-spans",
+    "sections": ["Code spans"],
+    "prompt": "Implement code spans (`` `code` ``, backtick strings of any length), as specified in CommonMark 0.31.2, section 6.1: https://spec.commonmark.org/0.31.2/#code-spans . Render them as `<code>`."
+  },
+  {
+    "name": "emphasis",
+    "sections": ["Emphasis and strong emphasis"],
+    "prompt": "Implement emphasis and strong emphasis with `*` and `_` (left- and right-flanking delimiter runs, the rule of 3, and the delimiter-stack algorithm of the spec appendix \"An algorithm for parsing nested emphasis and links\"), as specified in CommonMark 0.31.2, section 6.2: https://spec.commonmark.org/0.31.2/#emphasis-and-strong-emphasis . Render `<em>` and `<strong>`."
+  },
+  {
+    "name": "links",
+    "sections": ["Links"],
+    "prompt": "Implement links: inline links `[text](/url \"title\")` and reference links (full `[text][label]`, collapsed `[label][]` and shortcut `[label]`), as specified in CommonMark 0.31.2, section 6.3: https://spec.commonmark.org/0.31.2/#links , following the spec appendix \"An algorithm for parsing nested emphasis and links\". Render `<a href=\"...\" title=\"...\">`; link destinations are percent-encoded as in the spec examples."
+  },
+  {
+    "name": "images-autolinks",
+    "sections": ["Images", "Autolinks"],
+    "prompt": "Implement images `![alt](/src \"title\")` (inline and reference forms, alt text is the plain text of the description) and autolinks (`<https://example.com>`, `<foo@bar.example.com>`), as specified in CommonMark 0.31.2, sections 6.4-6.5: https://spec.commonmark.org/0.31.2/#images . Render `<img src=\"...\" alt=\"...\" />` and `<a href=\"...\">`."
+  },
+  {
+    "name": "raw-html-breaks",
+    "sections": ["Raw HTML", "Hard line breaks"],
+    "prompt": "Implement inline raw HTML (open and closing tags, comments, processing instructions, declarations, CDATA) and hard line breaks (two or more trailing spaces, or a backslash, before a line ending), as specified in CommonMark 0.31.2, sections 6.6-6.7: https://spec.commonmark.org/0.31.2/#raw-html . Render hard line breaks as `<br />` followed by a newline."
+  }
+]
