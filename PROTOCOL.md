@@ -113,3 +113,6 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - The union step is enabled only with `--regions`, because it relies on region coherence's classification. Part of `parallel-regions`' advantage over the other conditions can therefore come from integration. `integration.unions` is reported per run so this part can be quantified.
   - Build frozen for the main study: concord 34f894e (`target/oc11`). It also contains the TypeScript front-end and the opt-in fails-together check; neither is active in this benchmark (Python project, no `--fails-together`).
   - The pilot restarts from its first condition. The interrupted run is discarded.
+- **2026-11-24, during the Hy4 pilot, before any main-study run: resume pass.** The pilot run of `parallel-regions` on concord 34f894e had all 12 agents finished by minute 24. Then the resume pass resumed finished agents in two rounds, mostly for contracts that their own call sites already satisfied. The run went past 40 minutes and ended in merge and region conflicts. It was stopped and is discarded.
+  - Fix (concord 14fdc37): a finished agent is resumed only if its own call sites violate a changed contract.
+  - That build (`target/oc12`) is frozen for the main study. The pilot restarts from its first condition. All pilot and main-study runs, including the baselines, use this one build.
