@@ -68,6 +68,16 @@ def git(args: list[str], cwd: Path, check: bool = True) -> str:
     return r.stdout.strip()
 
 
+def ticket_check(ticket: dict, tester: Path) -> str:
+    """Acceptance check of a ticket: the spec examples of its own sections."""
+    keys = " or ".join(s.replace(" ", "_") for s in ticket["sections"])
+    return f'{tester} -q tests/test_spec.py -k "{keys}"'
+
+
+def ticket_task(ticket: dict, tester: Path) -> dict:
+    return {"name": ticket["name"], "prompt": ticket_prompt(ticket, tester), "check": ticket_check(ticket, tester)}
+
+
 def ticket_prompt(ticket: dict, tester: Path) -> str:
     keys = " or ".join(s.replace(" ", "_") for s in ticket["sections"])
     return (
@@ -211,7 +221,7 @@ def main() -> int:
             if args.condition == "sequential":
                 head = base
                 for t in tickets:
-                    rep = concord_run(args, repo, head, [{"name": t["name"], "prompt": ticket_prompt(t, tester)}],
+                    rep = concord_run(args, repo, head, [ticket_task(t, tester)],
                                       flags, work / "runs" / t["name"], tester)
                     reports.append(rep)
                     head = git(["rev-parse", f"concord/{rep['run_id']}/integration"], repo)
@@ -222,7 +232,7 @@ def main() -> int:
                           file=sys.stderr, flush=True)
                 final = head
             else:
-                tasks = [{"name": t["name"], "prompt": ticket_prompt(t, tester)} for t in tickets]
+                tasks = [ticket_task(t, tester) for t in tickets]
                 rep = concord_run(args, repo, base, tasks, flags, work / "runs" / "team", tester)
                 reports.append(rep)
                 final = git(["rev-parse", f"concord/{rep['run_id']}/integration"], repo)
@@ -285,6 +295,7 @@ def main() -> int:
             "turns": sum(a["turns"] for a in agents),
             "notices": sum(a["notices_delivered"] for a in agents),
             "gate_blocks": sum(a["gate_blocks"] for a in agents),
+            "check_blocks": sum(a.get("check_blocks", 0) for a in agents),
             "merges": sum(len(a["merges"]) for a in agents),
             "resumed": sum(a.get("resumed", 0) for a in agents),
             "agent_errors": errors,

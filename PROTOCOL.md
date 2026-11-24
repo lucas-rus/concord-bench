@@ -120,3 +120,10 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - Network and transport failures between an agent and its provider are not outcomes of a condition. They now make a run invalid, like quota errors; the markers include `provider.transport`, `ENOTFOUND`, `ECONNRESET`, `ETIMEDOUT` and `fetch failed`.
   - The run is marked invalid and repeated.
   - The queue now decides whether a run is valid from `results.jsonl`, not from the log line.
+- **2026-11-24, after the first valid Hy4 pilot run, before any main-study run: acceptance check for every condition.** The valid `parallel-regions` pilot run reached 633/652 with 0 conflicts. All 19 missing examples were in the agents' own tickets: link-refs 14/27, links 85/90, lists 73/74. None was lost at integration.
+  - Every ticket now carries an acceptance check: the spec examples of its own sections, the same command its prompt tells the agent to run. Concord's finish gate (concord c2069f5) runs it before the agent may finish.
+  - If the check fails and the agent is making progress (the first failure, or fewer failures than at the last attempt), the agent is sent back with the failing examples, at most 3 times. Failures that stop shrinking are taken to be out of the agent's reach, for example examples that depend on another ticket.
+  - **The check applies to every condition**: sequential, `parallel-off`, `parallel-integrator`, `parallel-regions` and `parallel-concord`. In the conditions without coordination it is the only part of the gate that is active. Conditions therefore still differ only in coordination. The integrator agent has no check.
+  - The number of check blocks is reported per run (`check_blocks`).
+  - Frozen build: concord c2069f5 (`target/oc13`).
+  - The pilot restarts in a new directory (`hy4c`). Earlier Hy4 pilot runs, without the check, are reported as pilots of an earlier design.
