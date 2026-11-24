@@ -143,19 +143,31 @@ def concord_run(args, repo: Path, base: str, tasks: list[dict], flags: list[str]
     return rep
 
 
+# OpenCode events that show the agent made progress (after an error: it recovered).
+PROGRESS_EVENTS = {"step_finish", "step-finish", "text", "tool_use", "tool"}
+
+
 def quota_errors(run_dir: Path) -> int:
-    """Agents whose run ended in a provider quota or rate-limit error."""
+    """Agents whose run ended in a provider error (quota, rate limit, network)."""
     n = 0
     for f in Path(run_dir).glob("agents/*"):
         hit = False
-        if f.suffix == ".jsonl":  # OpenCode events: look only at error events
+        if f.suffix == ".jsonl":  # OpenCode events
+            # Only a terminal provider error counts: OpenCode retries dropped
+            # connections and rate limits, and an agent that kept working
+            # afterwards was not stopped by them.
+            pending = False
             for line in f.read_text(errors="replace").splitlines():
                 try:
                     e = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if e.get("type") == "error" and any(m in json.dumps(e).lower() for m in QUOTA_MARKERS):
-                    hit = True
+                if e.get("type") == "error":
+                    if any(m in json.dumps(e).lower() for m in QUOTA_MARKERS):
+                        pending = True
+                elif e.get("type") in PROGRESS_EVENTS:
+                    pending = False
+            hit = pending
         elif f.suffix == ".json":  # Claude Code result
             try:
                 r = json.loads(f.read_text())

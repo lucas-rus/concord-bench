@@ -132,3 +132,8 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - Fix (concord 78c185b): each insertion is kept whole, and the combined file must parse, or the branch counts as a conflict. Replayed on the failing merge, the new union parses.
   - The run is marked invalid (a Concord bug, not an outcome) and repeated. Frozen build: concord 78c185b (`target/oc14`).
   - The `parallel-integrator` pilot run that was in progress on c2069f5 is kept. The changed code runs only with `--regions`, so its behaviour is identical in the integrator condition.
+- **2026-11-24, during the Hy4 pilot, before any main-study run: network robustness.**
+  - The machine's connection to the model provider failed twice within two hours with `getaddrinfo ENOTFOUND opencode.ai`, each time ending one agent of a 12-agent run.
+  - **Concord fix (concord 268c159):** when an OpenCode turn ends on a network or transport error, the runner waits and resumes the same session, up to 5 times. The resumes are logged (`transport_retry`). This applies to every condition, because it is part of the agent runner, not of coordination.
+  - **Validity, refined:** only a *terminal* provider error makes a run invalid, meaning one after which the agent made no more progress. OpenCode itself retries dropped connections, and an agent that kept working afterwards was not stopped by the error.
+  - Frozen build: concord 268c159 (`target/oc15`). The interrupted `parallel-integrator` pilot run, which lost its `lists` agent to a DNS failure, is invalid and repeated.
