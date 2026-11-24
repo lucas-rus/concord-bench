@@ -127,3 +127,8 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - The number of check blocks is reported per run (`check_blocks`).
   - Frozen build: concord c2069f5 (`target/oc13`).
   - The pilot restarts in a new directory (`hy4c`). Earlier Hy4 pilot runs, without the check, are reported as pilots of an earlier design.
+- **2026-11-24, during the Hy4 pilot (with acceptance check), before any main-study run: union bug.** The `parallel-regions` pilot run on concord c2069f5 reached 0/652 with 0 conflicts.
+  - Cause: `git merge-file --union` aligned identical lines inside two class insertions and interleaved them, which broke the syntax of `blocks.py` at integration.
+  - Fix (concord 78c185b): each insertion is kept whole, and the combined file must parse, or the branch counts as a conflict. Replayed on the failing merge, the new union parses.
+  - The run is marked invalid (a Concord bug, not an outcome) and repeated. Frozen build: concord 78c185b (`target/oc14`).
+  - The `parallel-integrator` pilot run that was in progress on c2069f5 is kept. The changed code runs only with `--regions`, so its behaviour is identical in the integrator condition.
