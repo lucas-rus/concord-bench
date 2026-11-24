@@ -99,3 +99,9 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - **Hy4 Flash Free is offered for a limited time.** If it is withdrawn or changed before the main study is complete, the main study is repeated in full with `opencode-go/deepseek-v4.1-flash`. Runs of the two models are never pooled.
   - **Design:** everything else follows the amendment above. Concord is frozen at commit 6cf1545. The pilot has one run per condition, numbered 1. The main study has n = 5 per condition (`parallel-concord` n = 3), runs 11–15, interleaved by round. It starts only if every pilot condition produced a valid run.
   - **Earlier pilots** (Big Pickle, Haiku) are reported as pilots of earlier builds.
+- **2026-11-24, during the Hy4 pilot, before any main-study run.** The first Hy4 pilot run of `parallel-regions` (concord 6cf1545) was cut short when the machine's disk filled up. It is invalid. Its event log still showed a livelock in the finish gate:
+  - Agent `lists` (higher rank) waited for `blockquotes`, so by the rank rule `blockquotes` did not wait for `lists`' contract change.
+  - The call sites of `blockquotes` already conformed, but the gate still required `lists`' code to be merged, which cannot happen while `lists` runs.
+  - So every finish attempt of `blockquotes` was blocked at once (5 blocks in 3.5 minutes) until the block limit.
+
+  Fix (concord df97d18): contracts whose producer is still running, and which the agent's own call sites already satisfy, are acknowledged when the agent cannot wait. That build (`target/oc10`) is now frozen for the main study; it also contains `concord watch`, a read-only viewer. The pilot restarts from its first condition.
