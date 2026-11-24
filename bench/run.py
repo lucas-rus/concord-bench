@@ -28,6 +28,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import re
 import shutil
@@ -52,7 +53,9 @@ CONDITIONS = {
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
 }
 QUOTA_MARKERS = ("free-limit", "free usage limit", "rate_limit", "rate limit", "usage limit", "quota",
-                 "hour limit", "weekly limit", "limit · resets", "hit your limit")
+                 "hour limit", "weekly limit", "limit · resets", "hit your limit",
+                 # OpenRouter
+                 "insufficient credits", "requires more credits", "402", "too many requests", "429")
 
 
 def git(args: list[str], cwd: Path, check: bool = True) -> str:
@@ -113,7 +116,11 @@ def concord_run(args, repo: Path, base: str, tasks: list[dict], flags: list[str]
     ]
     for a in extra_allow or []:
         cmd += ["--allow", a]
-    r = subprocess.run(cmd, capture_output=True, text=True)
+    env = dict(os.environ)
+    if args.model.startswith("openrouter/"):
+        # Registers OpenRouter models newer than OpenCode's built-in list.
+        env["OPENCODE_CONFIG"] = str(Path(__file__).resolve().parent / "opencode-openrouter.json")
+    r = subprocess.run(cmd, capture_output=True, text=True, env=env)
     (out / "concord.log").write_text(r.stdout + r.stderr)
     reports = sorted(out.glob("*/report.json"))
     if r.returncode != 0 or not reports:
