@@ -105,3 +105,11 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - So every finish attempt of `blockquotes` was blocked at once (5 blocks in 3.5 minutes) until the block limit.
 
   Fix (concord df97d18): contracts whose producer is still running, and which the agent's own call sites already satisfy, are acknowledged when the agent cannot wait. That build (`target/oc10`) is now frozen for the main study; it also contains `concord watch`, a read-only viewer. The pilot restarts from its first condition.
+- **2026-11-24, during the Hy4 pilot, before any main-study run: insert-only collisions are combined at integration.** In the restarted pilot run of `parallel-regions` (concord df97d18), the first 20 minutes showed:
+  - agents sat idle for 1,248 agent-seconds waiting for owners with whom they shared only insert-only collisions (two insertions at the same point);
+  - that is nearly half of all finish-gate waiting, plus a re-test turn after each hand-off.
+
+  Such additions commute (Apel), so in concord 34f894e region coherence no longer coordinates them. Instead, integration merges a branch with a union merge when every conflicting hunk is a pure insertion at the same point, and records it in the run report as `integration.unions`.
+  - The union step is enabled only with `--regions`, because it relies on region coherence's classification. Part of `parallel-regions`' advantage over the other conditions can therefore come from integration. `integration.unions` is reported per run so this part can be quantified.
+  - Build frozen for the main study: concord 34f894e (`target/oc11`). It also contains the TypeScript front-end and the opt-in fails-together check; neither is active in this benchmark (Python project, no `--fails-together`).
+  - The pilot restarts from its first condition. The interrupted run is discarded.
