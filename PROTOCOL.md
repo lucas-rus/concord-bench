@@ -116,3 +116,7 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
 - **2026-11-24, during the Hy4 pilot, before any main-study run: resume pass.** The pilot run of `parallel-regions` on concord 34f894e had all 12 agents finished by minute 24. Then the resume pass resumed finished agents in two rounds, mostly for contracts that their own call sites already satisfied. The run went past 40 minutes and ended in merge and region conflicts. It was stopped and is discarded.
   - Fix (concord 14fdc37): a finished agent is resumed only if its own call sites violate a changed contract.
   - That build (`target/oc12`) is frozen for the main study. The pilot restarts from its first condition. All pilot and main-study runs, including the baselines, use this one build.
+- **2026-11-24, during the Hy4 pilot: network failures make a run invalid.** The `parallel-integrator` pilot run reached 0/652. Its integrator agent had worked for 76 minutes, then failed on a network error ("getaddrinfo ENOTFOUND opencode.ai"), leaving the merge half-done. The quota check did not recognise this message, so the run was wrongly marked valid.
+  - Network and transport failures between an agent and its provider are not outcomes of a condition. They now make a run invalid, like quota errors; the markers include `provider.transport`, `ENOTFOUND`, `ECONNRESET`, `ETIMEDOUT` and `fetch failed`.
+  - The run is marked invalid and repeated.
+  - The queue now decides whether a run is valid from `results.jsonl`, not from the log line.

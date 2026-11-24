@@ -55,7 +55,10 @@ CONDITIONS = {
 QUOTA_MARKERS = ("free-limit", "free usage limit", "rate_limit", "rate limit", "usage limit", "quota",
                  "hour limit", "weekly limit", "limit · resets", "hit your limit",
                  # OpenRouter
-                 "insufficient credits", "requires more credits", "402", "too many requests", "429")
+                 "insufficient credits", "requires more credits", "402", "too many requests", "429",
+                 # Network and transport failures between the agent and its provider
+                 "provider.transport", "enotfound", "econnreset", "etimedout", "econnrefused",
+                 "socket hang up", "fetch failed", "network error")
 
 
 def git(args: list[str], cwd: Path, check: bool = True) -> str:
