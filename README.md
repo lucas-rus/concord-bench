@@ -34,6 +34,7 @@ Unlike `commonmark`, the scaffold contains **no pre-written feature test suite**
 | `parallel-fileleases` | 14 / 48 (29.2%) | 0 / 6 | 25 | 4 / 6 | 7.7 min |
 | `parallel-integrator` | 48 / 48 (100.0%) | 6 / 6 | 0 | 0 / 6 (7th agent) | 11.7 min (1.13×) |
 | **`parallel-concord` (`--regions`)** | **48 / 48 (100.0%)** | **6 / 6** | **0** | **0 / 6** | **6.0 min (2.20×)** |
+| **`orchestrator + concord` (autonomous MCP split)** | **48 / 48 (100.0%)** | **6 / 6** | **0** | **0 / 6** | **8.6 min (team)** |
 
 ## Conditions
 
