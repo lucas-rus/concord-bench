@@ -1,50 +1,69 @@
 # concord-bench
 
-A benchmark for **teams of AI coding agents building one project in parallel**, and the evaluation of [Concord](https://github.com/lucas-rus/concord), which coordinates such teams.
+A multi-language benchmark for **teams of AI coding agents building one project in parallel**, and the empirical evaluation harness for [Concord](https://github.com/lucas-rus/concord).
 
-## The task
+## Benchmark Suites
 
-Twelve agents build a [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown→HTML converter in Python from a small scaffold (`projects/commonmark/scaffold`: parsing architecture, paragraphs only). Each agent gets one ticket covering one to three spec sections (`projects/commonmark/tickets.json`), such as headings, lists, emphasis or links. The tickets are ordinary issues. They say nothing about interfaces, other agents or coordination. Coupling arises from the work itself:
-- emphasis and links share the delimiter algorithm;
-- links need the reference definitions;
-- images reuse link parsing;
-- lists and block quotes share the container loop.
+### 1. `projects/commonmark` — Python, 12 Parallel Agents, 652 Official Spec Examples
 
-**The judge** is the official CommonMark spec suite (652 examples), not tests written by the experimenters. `bench/evaluate.py` runs it on the integrated code, isolated, with a time limit per example.
+Twelve agents build a [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) Markdown→HTML converter in pure Python from a minimal scaffold (`projects/commonmark/scaffold`: parsing architecture, paragraphs only). Each agent receives one ordinary feature ticket (`projects/commonmark/tickets.json`) covering one to three spec sections (headings, lists, emphasis, links, HTML blocks, etc.) with no instructions about interfaces or peer agents:
+- emphasis and links share the delimiter-stack algorithm;
+- links depend on link reference definitions;
+- images reuse link destination/title parsing;
+- lists and block quotes share container continuation logic.
+
+**The judge** is the official CommonMark 0.31.2 specification suite (**652 examples**), executed by `bench/evaluate.py` in isolation with per-example timeouts.
+
+| Condition (`opencode-go/hy4-flash-free`) | Spec examples passed | Integration loss | Merge conflicts | Wall-clock time |
+|---|---|---|---|---|
+| `sequential` | 645 / 652 (98.9%) | 0 | 0 | 157.1 min (1.0×) |
+| `parallel-off` | 374 / 652 (57.4%) | 268 | 9 / 12 branches | 29.0 min |
+| `parallel-integrator` | 643 / 652 (98.6%) | 15 | 0 (13th agent) | 56.3 min (2.8×) |
+| **`parallel-regions` (Concord)** | **652 / 652 (100.0%)** | **0** | **0 / 12 branches** | **31.7 min (5.0×)** |
+
+### 2. `projects/dispecerat` — TypeScript 5 (`strict`), 6 Parallel Agents, Zero-Config `--test-cmd`
+
+Six parallel agents build a Bucharest field-service dispatch engine (`DemoBackend` in `lib/demo/mock-server.ts`, shared `lib/types.ts`, and `@/lib/...` tsconfig root path-alias modules: `skills-matching`, `geo-ranking`, `dispatch-lifecycle`, `clients-pv-reports`, `projects-timing`, `freshness-sla`).
+
+Unlike `commonmark`, the scaffold contains **no pre-written feature test suite** and `tasks.json` provides **no per-ticket `check` filter** — agents write their own `node:test` suites (`tests/<ticket>.test.ts`) and Concord coordinates using only the single project command `--test-cmd ./scripts/run-tests.sh`. Held-out evaluation (`bench/evaluate_dispecerat.py` + `projects/dispecerat/eval_spec.mjs`) scores strict `tsc` compilation plus **48 behavioral tests** (42 per-ticket tests + 6 cross-ticket runtime synergy tests).
 
 ## Conditions
 
-| condition | |
+| Condition | Description |
 |---|---|
-| `sequential` | one ticket after another (quality reference, no parallelism) |
-| `parallel-off` | 12 agents at once in isolated worktrees, merged at the end |
-| `parallel-integrator` | like `parallel-off`, then one extra agent merges the conflicting branches and resolves the conflicts |
-| `parallel-concord` | 12 agents at once, coordinated by Concord |
-| `parallel-contracts`, `parallel-peeronly` | ablations of Concord's two mechanisms |
+| `sequential` | Tickets implemented one after another on a single branch (quality & wall-clock baseline) |
+| `parallel-off` | All agents in parallel in isolated git worktrees, uncoordinated `git merge` |
+| `parallel-fileleases` | Exclusive whole-file locks (`--mode enforce --file-leases --no-contracts`) |
+| `parallel-overlaps` | Advisory textual overlap warnings (`--mode enforce --overlap-warnings --no-contracts --no-gate`) |
+| `parallel-integrator` | Like `parallel-off`, followed by an extra AI Integrator agent resolving conflicts & fixing regressions |
+| `parallel-concord` | Concord contract notices + finish gate + peer merge (`--mode enforce --peer-merge`) |
+| `parallel-regions` | Concord contract coherence + live region coherence + AST-verified insertion union (`--mode enforce --regions`) |
+| `parallel-contracts`, `parallel-peeronly`, `parallel-allcontracts` | Controlled ablations of Concord's mechanisms |
 
-**Metrics.**
-- Spec examples passed by the integrated result.
-- **Integration loss**: each ticket's sections passing on the agent's own branch but failing after the merge.
-- Merge conflicts, wall time, cost, and Concord's interventions.
-
-The hypotheses and analysis are pre-registered in [PROTOCOL.md](PROTOCOL.md).
+**Metrics:** spec tests passed, strict compilation status, **integration loss** (tests passing on an agent's branch alone that fail after integration), cross-ticket synergy, merge conflicts, wall-clock speedup, token cost, and SASE Merge-Readiness Pack (`mrp.json`) readiness. Hypotheses and protocol are pre-registered in [PROTOCOL.md](PROTOCOL.md).
 
 ## Running
 
 ```bash
-# Concord: https://github.com/lucas-rus/concord#install-and-use-it-from-your-agent-mcp
+# Install Concord: https://github.com/lucas-rus/concord
+
+# 1. Python CommonMark 0.31.2 benchmark (12 agents, 652 spec examples)
 python3 -m venv .venv && .venv/bin/pip install pytest numpy scipy matplotlib
-python3 bench/run.py --condition parallel-concord --agent-cli opencode --model opencode/big-pickle \
-    --runs 1 --python .venv/bin/python --out results/raw
-.venv/bin/python bench/analyze.py results/raw/results.jsonl --model opencode/big-pickle --out results/report
-python3 bench/evaluate.py projects/commonmark/scaffold     # score any checkout
+python3 bench/run.py --condition parallel-regions --agent-cli opencode \
+    --model opencode-go/hy4-flash-free --runs 1 --python .venv/bin/python --out results/raw
+.venv/bin/python bench/analyze.py results/raw/results.jsonl \
+    --model opencode-go/hy4-flash-free --out results/report
+python3 bench/evaluate.py projects/commonmark/scaffold
+
+# 2. TypeScript Dispecerat benchmark (6 agents, 48 held-out spec & synergy tests)
+(cd projects/dispecerat/scaffold && npm install)
+python3 bench/run_dispecerat.py \
+    --condition parallel-concord,parallel-off,parallel-fileleases,parallel-integrator \
+    --agent-cli opencode --model opencode-go/hy4-flash-free --runs 1 --out results/dispecerat
+python3 bench/evaluate_dispecerat.py --repo projects/dispecerat/scaffold
 ```
-
-## Results
-
-See [results/](results/). Each valid run's integrated code is published as a branch `runs/<condition>-<model>-<n>`.
 
 ## License
 
-- **Code:** MIT.
-- **Spec examples:** `projects/commonmark/spec.json` and `projects/commonmark/scaffold/tests/spec.json` are taken from the [CommonMark spec](https://spec.commonmark.org/0.31.2/) by John MacFarlane, licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
+- **Code & Dispecerat benchmark:** MIT.
+- **CommonMark spec examples:** `projects/commonmark/spec.json` and `projects/commonmark/scaffold/tests/spec.json` are from the [CommonMark 0.31.2 specification](https://spec.commonmark.org/0.31.2/) by John MacFarlane, licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).

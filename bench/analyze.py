@@ -109,11 +109,15 @@ def main() -> int:
     lines.append("Cells: mean ± SD [bootstrap 95% CI of the mean].")
     lines.append("")
 
+    # Protocol Amendment 2 designates parallel-regions (contract + region
+    # coherence) as the primary treatment when present; fall back to
+    # parallel-concord when analysing older peer-merge runs.
+    treatment = "parallel-regions" if "parallel-regions" in by else "parallel-concord"
     tests = [
-        ("H1", "passed", "parallel-concord", "parallel-off", "more spec examples passed"),
-        ("H2", "integration_loss", "parallel-concord", "parallel-off", "smaller integration loss"),
-        ("H3", "wall_min", "parallel-concord", "sequential", "shorter wall time"),
-        ("H5", "passed", "parallel-concord", "parallel-integrator", "more spec examples passed than with an integrator"),
+        ("H1", "passed", treatment, "parallel-off", "more spec examples passed"),
+        ("H2", "integration_loss", treatment, "parallel-off", "smaller integration loss"),
+        ("H3", "wall_min", treatment, "sequential", "shorter wall time"),
+        ("H5", "passed", treatment, "parallel-integrator", "more spec examples passed than with an integrator"),
     ]
     results = []
     for h, key, a, b, claim in tests:
@@ -132,11 +136,12 @@ def main() -> int:
                 f"{cliffs_delta(xa, xb):+.2f} | {p:.4f} | {pa:.4f} |"
             )
         lines.append("")
-    if "parallel-concord" in by and "sequential" in by:
-        q = np.mean([r["passed"] for r in by["parallel-concord"]]) / np.mean([r["passed"] for r in by["sequential"]])
-        s = np.mean([r["wall_min"] for r in by["sequential"]]) / np.mean([r["wall_min"] for r in by["parallel-concord"]])
-        lines.append(f"H4 (descriptive): parallel-concord reaches **{100 * q:.0f}%** of sequential quality, **{s:.1f}×** faster.")
-        lines.append("")
+    for tr in ("parallel-regions", "parallel-concord"):
+        if tr in by and "sequential" in by:
+            q = np.mean([r["passed"] for r in by[tr]]) / np.mean([r["passed"] for r in by["sequential"]])
+            s = np.mean([r["wall_min"] for r in by["sequential"]]) / np.mean([r["wall_min"] for r in by[tr]])
+            lines.append(f"H4 (descriptive): {tr} reaches **{100 * q:.0f}%** of sequential quality, **{s:.1f}×** faster.")
+            lines.append("")
 
     # Per-section table.
     sections = list(json.loads((Path(__file__).resolve().parent.parent / "projects/commonmark/spec.json").read_text()))

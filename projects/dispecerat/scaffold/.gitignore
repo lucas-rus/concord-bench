@@ -1,0 +1,5 @@
+node_modules/
+.tsbuild/
+dist/
+.DS_Store
+.concord/

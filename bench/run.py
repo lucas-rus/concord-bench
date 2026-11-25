@@ -51,6 +51,9 @@ CONDITIONS = {
     "parallel-contracts": ["--mode", "enforce"],
     "parallel-regions": ["--mode", "enforce", "--regions"],
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
+    "parallel-fileleases": ["--mode", "enforce", "--file-leases", "--no-contracts"],
+    "parallel-overlaps": ["--mode", "enforce", "--overlap-warnings", "--no-contracts", "--no-gate"],
+    "parallel-allcontracts": ["--mode", "enforce", "--regions", "--all-contracts"],
 }
 QUOTA_MARKERS = ("free-limit", "free usage limit", "rate_limit", "rate limit", "usage limit", "quota",
                  "hour limit", "weekly limit", "limit · resets", "hit your limit",
