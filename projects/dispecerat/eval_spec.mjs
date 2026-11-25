@@ -271,7 +271,7 @@ spec("dispatch-lifecycle", "set_shift_protects_worker_with_active_task", async (
 spec("clients-pv-reports", "normalize_client_key_romanian_diacritics_and_suffixes", async () => {
   const { normalizeClientKey } = await import("@/lib/clients")
   assert.equal(
-    normalizeClientKey("S.C. Clinica Medicală Dorobanți S.R.L."),
+    normalizeClientKey("SC Clinica Medicală Dorobanți S.R.L."),
     "clinica medicala dorobanti",
   )
   assert.equal(normalizeClientKey("Primăria Sectorului 1"), "primaria sectorului 1")
@@ -283,11 +283,11 @@ spec("clients-pv-reports", "resolve_client_by_id_exact_and_substring", async () 
   const fx = buildFixture(FIXED_NOW)
   assert.equal(resolveClient(fx.clients, { clientId: clientId(2) })?.cui, "RO4192510")
   assert.equal(
-    resolveClient(fx.clients, { clientName: "SC Spitalul Filantropia SRL" })?.id,
+    resolveClient(fx.clients, { clientName: "SC Filantropia SRL" })?.id,
     clientId(1),
   )
   assert.equal(
-    resolveClient(fx.clients, { clientName: "Clinica Dorobanti" })?.id,
+    resolveClient(fx.clients, { clientName: "Clinica Medicala Dorobanti" })?.id,
     clientId(4),
   )
 })
@@ -612,7 +612,7 @@ spec("integration", "end_to_end_fuzzy_task_dispatch_pv_completion_frees_worker",
   const task = backend.createTask(
     {
       title: "Avarie pompă circulație",
-      clientName: "spitalul filantropia",
+      clientName: "SC Spitalul Clinic Filantropia SRL",
       addressText: "Bd. Ion Mihalache 11-13",
       lat: 44.45203,
       lng: 26.08302,

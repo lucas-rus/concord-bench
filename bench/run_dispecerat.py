@@ -201,27 +201,32 @@ def run_condition(args, condition: str, tickets: list[dict], run_num: int) -> di
     model_tag = re.sub(r"[^A-Za-z0-9.-]+", "_", args.model)
     name = f"{condition}-{model_tag}-{run_num}"
     work = args.out / name
-    if work.exists():
-        shutil.rmtree(work)
+    existing_reports = sorted((work / "runs" / "team").glob("*/report.json")) if args.resume_existing else []
     repo = work / "repo"
-    shutil.copytree(
-        PROJECT / "scaffold",
-        repo,
-        ignore=shutil.ignore_patterns("node_modules", ".tsbuild", "dist", ".DS_Store"),
-    )
-    (repo / "scripts" / "run-tests.sh").chmod(0o755)
-    git(["init", "-q", "-b", "main"], repo)
-    git(["add", "-A"], repo)
-    git(["config", "user.name", "concord-bench"], repo)
-    git(["config", "user.email", "concord-bench@localhost"], repo)
-    git(["commit", "-q", "-m", "scaffold"], repo)
-    base = git(["rev-parse", "HEAD"], repo)
+    if not existing_reports:
+        if work.exists():
+            shutil.rmtree(work)
+        shutil.copytree(
+            PROJECT / "scaffold",
+            repo,
+            ignore=shutil.ignore_patterns("node_modules", ".tsbuild", "dist", ".DS_Store"),
+        )
+        (repo / "scripts" / "run-tests.sh").chmod(0o755)
+        git(["init", "-q", "-b", "main"], repo)
+        git(["add", "-A"], repo)
+        git(["config", "user.name", "concord-bench"], repo)
+        git(["config", "user.email", "concord-bench@localhost"], repo)
+        git(["commit", "-q", "-m", "scaffold"], repo)
+        base = git(["rev-parse", "HEAD"], repo)
+    else:
+        base = json.loads(existing_reports[-1].read_text())["base"]
     print(f"[{name}] start", file=sys.stderr, flush=True)
     started = time.time()
     reports: list[dict] = []
     unmerged: list[str] = []
     alone: dict[str, dict] = {}
     eval_seconds = 0.0
+    reused_wall = 0.0
 
     if condition == "sequential":
         head = base
@@ -246,8 +251,13 @@ def run_condition(args, condition: str, tickets: list[dict], run_num: int) -> di
             )
         final = head
     else:
-        tasks = [ticket_task(t) for t in tickets]
-        rep = concord_run(args, repo, base, tasks, flags, work / "runs" / "team")
+        if existing_reports:
+            rep = json.loads(existing_reports[-1].read_text())
+            rep["_dir"] = str(existing_reports[-1].parent)
+            reused_wall = float(rep["wall_seconds"])
+        else:
+            tasks = [ticket_task(t) for t in tickets]
+            rep = concord_run(args, repo, base, tasks, flags, work / "runs" / "team")
         reports.append(rep)
         run_id = rep["run_id"]
         t0 = time.time()
@@ -256,10 +266,11 @@ def run_condition(args, condition: str, tickets: list[dict], run_num: int) -> di
             alone[t["name"]] = evaluate_rev(repo, rev, set(t["sections"]), work / "eval")
         eval_seconds += time.time() - t0
         final = git(["rev-parse", f"concord/{run_id}/integration"], repo)
-        unmerged = [c["agent"] for c in rep["integration"]["conflicts"]]
+        unmerged = sorted(rep["integration"]["conflicts"])
 
         if condition == "parallel-integrator" and unmerged:
             branches = [f"concord/{run_id}/{a}" for a in unmerged]
+            print(f"[{name}] integrator: {len(branches)} branches", file=sys.stderr, flush=True)
             irep = concord_run(
                 args,
                 repo,
@@ -280,7 +291,7 @@ def run_condition(args, condition: str, tickets: list[dict], run_num: int) -> di
                 != 0
             ]
 
-    wall = time.time() - started - eval_seconds
+    wall = reused_wall + (time.time() - started - eval_seconds)
     score = evaluate_rev(repo, final, None, work / "eval")
     base_score = evaluate_rev(repo, base, None, work / "eval")
 
@@ -296,7 +307,7 @@ def run_condition(args, condition: str, tickets: list[dict], run_num: int) -> di
     mrp_path = Path(reports[0]["_dir"]) / "mrp.json"
     if mrp_path.exists():
         try:
-            mrp_ready = json.loads(mrp_path.read_text()).get("ready")
+            mrp_ready = json.loads(mrp_path.read_text()).get("ready_to_merge")
         except json.JSONDecodeError:
             mrp_ready = None
 
@@ -372,6 +383,7 @@ def main() -> int:
     ap.add_argument("--runs", type=int, default=1)
     ap.add_argument("--first-run", type=int, default=1)
     ap.add_argument("--tickets", help="comma-separated subset of ticket names")
+    ap.add_argument("--resume-existing", action="store_true", help="reuse completed team runs if present")
     ap.add_argument("--out", required=True, type=Path)
     args = ap.parse_args()
     args.out = args.out.resolve()

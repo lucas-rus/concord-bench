@@ -27,6 +27,14 @@ Six parallel agents build a Bucharest field-service dispatch engine (`DemoBacken
 
 Unlike `commonmark`, the scaffold contains **no pre-written feature test suite** and `tasks.json` provides **no per-ticket `check` filter** — agents write their own `node:test` suites (`tests/<ticket>.test.ts`) and Concord coordinates using only the single project command `--test-cmd ./scripts/run-tests.sh`. Held-out evaluation (`bench/evaluate_dispecerat.py` + `projects/dispecerat/eval_spec.mjs`) scores strict `tsc` compilation plus **48 behavioral tests** (42 per-ticket tests + 6 cross-ticket runtime synergy tests).
 
+| Condition (`opencode-go/hy4-flash-free`) | Held-out spec (`/48`) | Synergy (`/6`) | Integration loss | Merge conflicts | Wall-clock time |
+|---|---|---|---|---|---|
+| `sequential` | 48 / 48 (100.0%) | 6 / 6 | 0 | 0 / 6 | 13.3 min (1.0×) |
+| `parallel-off` | 21 / 48 (43.8%) | 0 / 6 | 21 | 3 / 6 | 6.0 min |
+| `parallel-fileleases` | 14 / 48 (29.2%) | 0 / 6 | 25 | 4 / 6 | 7.7 min |
+| `parallel-integrator` | 48 / 48 (100.0%) | 6 / 6 | 0 | 0 / 6 (7th agent) | 11.7 min (1.13×) |
+| **`parallel-concord` (`--regions`)** | **48 / 48 (100.0%)** | **6 / 6** | **0** | **0 / 6** | **6.0 min (2.20×)** |
+
 ## Conditions
 
 | Condition | Description |
