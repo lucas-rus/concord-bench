@@ -50,6 +50,7 @@ CONDITIONS = {
     "parallel-concord": ["--mode", "enforce", "--peer-merge"],
     "parallel-contracts": ["--mode", "enforce"],
     "parallel-regions": ["--mode", "enforce", "--regions"],
+    "parallel-regions-lean": ["--mode", "enforce", "--regions", "--lean"],
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
     "parallel-fileleases": ["--mode", "enforce", "--file-leases", "--no-contracts"],
     "parallel-overlaps": ["--mode", "enforce", "--overlap-warnings", "--no-contracts", "--no-gate"],
