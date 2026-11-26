@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 from scipy.stats import mannwhitneyu
 
-ORDER = ["sequential", "parallel-off", "parallel-integrator", "parallel-contracts", "parallel-regions", "parallel-regions-lean", "parallel-peeronly", "parallel-concord"]
+ORDER = ["sequential", "parallel-off", "parallel-integrator", "parallel-integrator-trim", "parallel-contracts", "parallel-regions", "parallel-regions-lean", "parallel-regions-efficient", "parallel-peeronly", "parallel-concord"]
 METRICS = [
     ("passed", "spec examples passed (of 652)"),
     ("integration_loss", "integration loss (examples)"),

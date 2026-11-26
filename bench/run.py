@@ -51,6 +51,8 @@ CONDITIONS = {
     "parallel-contracts": ["--mode", "enforce"],
     "parallel-regions": ["--mode", "enforce", "--regions"],
     "parallel-regions-lean": ["--mode", "enforce", "--regions", "--lean"],
+    "parallel-regions-efficient": ["--mode", "enforce", "--regions", "--lean", "--trim-outputs"],
+    "parallel-integrator-trim": ["--mode", "off", "--trim-outputs"],
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
     "parallel-fileleases": ["--mode", "enforce", "--file-leases", "--no-contracts"],
     "parallel-overlaps": ["--mode", "enforce", "--overlap-warnings", "--no-contracts", "--no-gate"],
@@ -253,7 +255,7 @@ def main() -> int:
                 reports.append(rep)
                 final = git(["rev-parse", f"concord/{rep['run_id']}/integration"], repo)
                 team_run = rep["run_id"]
-                if args.condition == "parallel-integrator" and rep["integration"]["conflicts"]:
+                if args.condition.startswith("parallel-integrator") and rep["integration"]["conflicts"]:
                     branches = [f"concord/{team_run}/{n}" for n in rep["integration"]["conflicts"]]
                     print(f"[{name}] integrator: {len(branches)} branches", file=sys.stderr, flush=True)
                     irep = concord_run(args, repo, final, [{"name": "integrator", "prompt": integrator_prompt(branches, tester)}],

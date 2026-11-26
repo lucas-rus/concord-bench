@@ -176,3 +176,15 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - Second variant, concord 1f63d94 (`--lean` with early release): an owner waiting at its own finish gate releases its regions to the agents waiting on it at once.
   - Pilot 2: n = 3 (`hy4-lean2`), run after pilot 1, with the same correctness gate (every run 652/652 with 0 conflicts, or the change is reverted) and the same outcomes.
 - **2026-11-26, pilot 2 (early release): stopped and reverted.** In its first run, `code-spans`, released while waiting at its gate, was sent back and changed the released lines in `render.py` again. `code-blocks` had already combined them and finished, so `code-spans` could not reconcile and was let through at the block limit with the overlap unresolved. This never happened in the 8 earlier region runs (main study and lean pilot). A waiting agent is not done with its lines, so the assumption behind early release is false. Early release is reverted (concord 21f5e70), and the pilot stops after this run. Its result is recorded for the report but not used for the lean gate. The lean gate without early release (pilot 1) passed its correctness gate: 3 of 3 runs 652/652 with 0 conflicts, 62.5M tokens per run against the integrator's 66.4M. Its wall time is confounded by a slower provider during the pilot, so time is to be compared only in interleaved runs.
+- **2026-11-26, before any run: efficiency benchmark (pre-registered).** Concord a4cc59f adds three general mechanisms, none specific to this benchmark:
+  - **Output trimming** (`--trim-outputs`, OpenCode agents): outputs of commands, web pages and searches above 8,000 / 6,000 characters keep their head and tail in the context; the full output is saved to a file.
+  - **Hand-offs after a yield** show the agent the diff it gave up.
+  - **`--lean` waits at the finish gate** for a live owner instead of giving the waiting agent a turn every 5 minutes.
+  - Conditions, interleaved in 3 rounds (runs 11–13), `opencode-go/hy4-flash-free`, n = 3 each, directory `hy4-eff`:
+    - `parallel-regions-efficient` (`--regions --lean --trim-outputs`);
+    - `parallel-regions` (base Concord, same build);
+    - `parallel-integrator`;
+    - `parallel-integrator-trim` (the integrator with output trimming, to separate the effect of trimming from that of coordination).
+  - Correctness gate as before: every `parallel-regions-efficient` run must pass 652/652 with 0 merge conflicts, or the mechanisms are reverted.
+  - Outcomes: wall time, tokens and list-price cost per run (`bench/tokens.py`), examples passed, conflicts. Comparisons: `parallel-regions-efficient` vs `parallel-integrator` and vs `parallel-regions` on wall time and tokens (Mann–Whitney U, Cliff's δ; with n = 3 the minimum two-sided p is 0.10, so the comparisons are reported as effect sizes and are descriptive).
+  - Starts after the DeepSeek replication, or earlier if prioritized.
