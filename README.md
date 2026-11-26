@@ -14,18 +14,25 @@ Twelve agents build a [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/) M
 
 **The judge** is the official CommonMark 0.31.2 specification suite (**652 examples**), executed by `bench/evaluate.py` in isolation with per-example timeouts.
 
-| Condition (`opencode-go/hy4-flash-free`) | Spec examples passed | Integration loss | Merge conflicts | Wall-clock time |
-|---|---|---|---|---|
-| `sequential` | 645 / 652 (98.9%) | 0 | 0 | 157.1 min (1.0×) |
-| `parallel-off` | 374 / 652 (57.4%) | 268 | 9 / 12 branches | 29.0 min |
-| `parallel-integrator` | 643 / 652 (98.6%) | 15 | 0 (13th agent) | 56.3 min (2.8×) |
-| **`parallel-regions` (Concord)** | **652 / 652 (100.0%)** | **0** | **0 / 12 branches** | **31.7 min (5.0×)** |
+Main study (pre-registered in [PROTOCOL.md](PROTOCOL.md)): `opencode-go/hy4-flash-free`, runs interleaved by round, mean ± SD over n valid runs. Full report with bootstrap CIs, tests and figures: [`results/hy4m/report`](results/hy4m/report/report.md).
+
+| Condition | n | Spec examples passed (of 652) | Integration loss | Merge conflicts (of 12 branches) | Wall-clock time |
+|---|---|---|---|---|---|
+| `sequential` (1 agent, ticket by ticket) | 5 | 651.2 ± 0.8 (650–652) | 0 | 0 | 65.1 ± 5.9 min (1.0×) |
+| `parallel-off` (12 agents, uncoordinated) | 5 | 199.0 ± 30.1 (161–236) | 301.8 ± 45.8 | 9.0 ± 1.4 | 13.7 ± 1.9 min |
+| `parallel-integrator` (12 agents + 13th integrator agent) | 5 | 652 in every run | 0 | 9.4 ± 1.1, resolved by the integrator | 34.2 ± 4.8 min (1.9×) |
+| Concord, peer merge (`parallel-concord`: `--mode enforce --peer-merge`) | 3 | 652 in every run | 0 | 0 | 27.1 ± 3.5 min (2.4×) |
+| **Concord, region coherence (`parallel-regions`: `--mode enforce --regions`)** | **5** | **652 in every run** | **0** | **0** | **20.8 ± 1.9 min (3.1×)** |
+
+Pre-registered tests (Mann–Whitney U, Holm-corrected, Cliff's δ), region coherence vs: `parallel-off` on examples passed (H1) and integration loss (H2), and `sequential` on wall time (H3): δ = ±1.00, p = 0.03 each. Exploratory: region coherence is faster than the integrator in every pairing (δ = −1.00, p = 0.008, uncorrected). A replication with `opencode-go/deepseek-v4.1-flash` (n = 3 per condition) is running.
 
 ### 2. `projects/dispecerat` — TypeScript 5 (`strict`), 6 Parallel Agents, Zero-Config `--test-cmd`
 
 Six parallel agents build a Bucharest field-service dispatch engine (`DemoBackend` in `lib/demo/mock-server.ts`, shared `lib/types.ts`, and `@/lib/...` tsconfig root path-alias modules: `skills-matching`, `geo-ranking`, `dispatch-lifecycle`, `clients-pv-reports`, `projects-timing`, `freshness-sla`).
 
 Unlike `commonmark`, the scaffold contains **no pre-written feature test suite** and `tasks.json` provides **no per-ticket `check` filter** — agents write their own `node:test` suites (`tests/<ticket>.test.ts`) and Concord coordinates using only the single project command `--test-cmd ./scripts/run-tests.sh`. Held-out evaluation (`bench/evaluate_dispecerat.py` + `projects/dispecerat/eval_spec.mjs`) scores strict `tsc` compilation plus **48 behavioral tests** (42 per-ticket tests + 6 cross-ticket runtime synergy tests).
+
+Exploratory, n = 1 per condition (rescored after a fix to the evaluator's fixtures, see [PROTOCOL.md](PROTOCOL.md)):
 
 | Condition (`opencode-go/hy4-flash-free`) | Held-out spec (`/48`) | Synergy (`/6`) | Integration loss | Merge conflicts | Wall-clock time |
 |---|---|---|---|---|---|
@@ -34,7 +41,6 @@ Unlike `commonmark`, the scaffold contains **no pre-written feature test suite**
 | `parallel-fileleases` | 14 / 48 (29.2%) | 0 / 6 | 25 | 4 / 6 | 7.7 min |
 | `parallel-integrator` | 48 / 48 (100.0%) | 6 / 6 | 0 | 0 / 6 (7th agent) | 11.7 min (1.13×) |
 | **`parallel-concord` (`--regions`)** | **48 / 48 (100.0%)** | **6 / 6** | **0** | **0 / 6** | **6.0 min (2.20×)** |
-| **`orchestrator + concord` (autonomous MCP split)** | **48 / 48 (100.0%)** | **6 / 6** | **0** | **0 / 6** | **8.6 min (team)** |
 
 ## Conditions
 
