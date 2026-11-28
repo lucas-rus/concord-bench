@@ -122,11 +122,31 @@ def evaluate_rev(repo: Path, rev: str, python: str, sections: set[str] | None, s
         git(["worktree", "remove", "--force", str(scratch)], repo, check=False)
 
 
+_HELP: dict[str, str] = {}
+
+
+def supports(concord: str, flag: str) -> bool:
+    """Whether this Concord binary's `run` knows `flag` (older frozen builds may not)."""
+    if concord not in _HELP:
+        r = subprocess.run([concord, "run", "--help"], capture_output=True, text=True)
+        _HELP[concord] = r.stdout + r.stderr
+    return flag in _HELP[concord]
+
+
+def explicit_gate(concord: str, flags: list[str]) -> list[str]:
+    """Since Concord 0.2.0 the lean gate is the default in enforce mode; the
+    non-lean conditions pass --no-lean so they keep measuring the same gate."""
+    if "enforce" in flags and "--lean" not in flags and supports(concord, "--no-lean"):
+        return [*flags, "--no-lean"]
+    return flags
+
+
 def concord_run(args, repo: Path, base: str, tasks: list[dict], flags: list[str], out: Path, tester: Path,
                 extra_allow: list[str] | None = None) -> dict:
     tasks_file = out / "tasks.json"
     out.mkdir(parents=True, exist_ok=True)
     tasks_file.write_text(json.dumps(tasks, indent=2))
+    flags = explicit_gate(str(args.concord), flags)
     cmd = [
         args.concord, "run", "--repo", str(repo), "--base", base, "--tasks", str(tasks_file),
         *flags, "--agent-cli", args.agent_cli, "--model", args.model, "--budget-usd", args.budget_usd,

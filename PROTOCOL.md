@@ -190,3 +190,19 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - Starts after the DeepSeek replication, or earlier if prioritized.
 - **2026-11-26, 21:28: reprioritized.** The DeepSeek replication is paused: round 2's `sequential` run was stopped and will be repeated. The efficiency benchmark is postponed. First comes an exploratory pilot (`hy4-effpilot`, concord a4cc59f) alternating `parallel-regions-efficient` and `parallel-regions` for 2 rounds, to test and improve the efficiency mechanisms before any benchmark run. The pre-registered efficiency benchmark keeps its design and is re-registered with the final build before it runs.
 - **2026-11-27, 02:03: efficiency pilot on 196d7a0 stopped; long lean waits and yield-diff reverted (concord 49bfec3).** In `hy4-effpilot` run 11 on concord 196d7a0, `emphasis` hit the 6-block limit on `render.py` with 3 hand-off merge conflicts and 11 region conflicts (versus 0 in all 8 earlier region/lean runs). Both the 30-min lean wait (`LEAN_MAX_WAIT`) and the yield-diff hand-off text were reverted in concord 49bfec3, keeping the proven `--lean` gate and `--trim-outputs`. The exploratory pilot restarts (`effpilot4.sh`, `target/eff-49bfec3`) interleaving `parallel-regions-efficient` (`--regions --lean --trim-outputs`), `parallel-integrator`, and `parallel-regions` under `caffeinate -i`.
+- **2026-11-28: efficiency pilot results, and Concord 0.2.0.**
+  - Pilot (`hy4-effpilot`, concord 49bfec3 / f01d05f):
+
+    | Condition | Runs | Examples passed | Conflicts | Time (min) | Tokens | List-price cost |
+    |---|---|---|---|---|---|---|
+    | `parallel-regions-efficient` | 2 | 652/652 both | 0 | 15.9, 23.5 | 63.5M avg | $0.44 |
+    | `parallel-integrator` | 2 | 652/652 both | 8, 10 | 29.4, 37.5 | 64.6M avg | $0.44 |
+    | `parallel-regions` (base) | 1 | 504/652 | 1 | 34.4 | 109.3M | $0.63 |
+
+  - The base run's loss came from repeated hand-off merge conflicts (`region_handoff_conflict`, 15 in the run). The agent had been told to reconcile with a finished version it could not see; it was let through at the block limit, and the overlap reached integration as a merge conflict. The stopped efficient run on 196d7a0 showed the same pattern. No run of the main study did.
+  - **Concord 0.2.0** (tag v0.2.0, commit 040bd6a):
+    - The lean gate is the default in enforce mode (`--no-lean` turns it off).
+    - A conflicting region hand-off now leaves git's conflict markers in the agent's worktree and holds it until they are resolved, as peer merge does.
+    - Check commands are bounded by a timeout (f01d05f).
+  - The benchmark harness passes `--no-lean` to the non-lean enforce conditions whenever the binary supports it, so `parallel-regions` keeps measuring the previous gate. Older frozen builds are unaffected.
+  - Next: `parallel-integrator-trim` (2 runs, f01d05f) for comparison with the integrator, then the efficiency benchmark is re-registered on the 0.2.0 build.
