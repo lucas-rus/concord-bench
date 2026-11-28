@@ -231,3 +231,18 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - No block-limit let-throughs. Conflict-marker merges (`region_handoff_markers`) occurred once and twice and were resolved.
   - **`--fresh-repairs` does not pay off:** repair steps read half as much (45K against 90K tokens per step), but the fresh agents needed more than twice the steps (65 against 28) to re-orient, 2.9M against 2.5M tokens in total. Round 2 of the fresh variant is skipped. The flag stays available but off.
   - The fresh run's larger coordination total came from its gate turns (172 against 58 steps, more region conflicts in that run), not from the repairs.
+- **2026-11-28: efficiency benchmark, re-registered on concord 142e858, before any run.**
+  - Since the first registration, concord 142e858 adds:
+    - lean gate by default (0.2.0);
+    - conflict-marker merges for conflicting hand-offs and for overlaps with finished owners;
+    - hand-off turns that state what came in;
+    - lean contract resumes: the gate is asked first, and the agent is resumed only if held.
+  - Pilot 3, round 2 (efficient, 0c24b52): 652/652, 0 conflicts, 26.6 min, 89.8M tokens (58.2M work, 31.6M coordination, of which about 7.4M were two-turn contract resumes of four agents), $0.56.
+  - Conditions, interleaved in rounds 11–13, `opencode-go/hy4-flash-free`, n = 3 each, directory `hy4-eff`:
+    - `parallel-regions-efficient` (`--regions --lean --trim-outputs`);
+    - `parallel-integrator`;
+    - `parallel-regions` (`--regions --no-lean`: the previous gate, same build).
+  - `parallel-integrator-trim` is dropped: a single run showed no saving, with 67.3M tokens and $0.45.
+  - Correctness gate: every efficient run must pass 652/652 with 0 merge conflicts and no block-limit let-through, or the benchmark stops (stop-bad-tests-early).
+  - Outcomes: wall time; total tokens and list-price cost; and **coordination tokens**, everything after each agent's first turn plus the integrator agent (`bench/tokens.py`). The coordination tokens are the primary efficiency outcome, because turn-1 work varies widely between runs.
+  - Comparisons (descriptive, n = 3; Mann–Whitney U and Cliff's δ): efficient vs integrator, and efficient vs `parallel-regions`.
