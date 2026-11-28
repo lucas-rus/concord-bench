@@ -246,3 +246,7 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - Correctness gate: every efficient run must pass 652/652 with 0 merge conflicts and no block-limit let-through, or the benchmark stops (stop-bad-tests-early).
   - Outcomes: wall time; total tokens and list-price cost; and **coordination tokens**, everything after each agent's first turn plus the integrator agent (`bench/tokens.py`). The coordination tokens are the primary efficiency outcome, because turn-1 work varies widely between runs.
   - Comparisons (descriptive, n = 3; Mann–Whitney U and Cliff's δ): efficient vs integrator, and efficient vs `parallel-regions`.
+- **2026-11-28: efficiency benchmark stopped after its first run; restarted on concord 185b8ba.**
+  - In `hy4-eff` run 11 (efficient, 142e858), `headings` was held five times as non-conforming to `BlockParser` contracts after a clean merge, although its call sites matched the merged signatures, and it was let through at the block limit. The run was stopped (`stopped-blocklimit-*`).
+  - Fix (185b8ba), lean only: an agent held again with exactly the same contracts and problems after a turn is not held a third time. The contracts are accepted with a `contract_unresolved` warning, and the merged code is tested by the finished-peer check and the repair pass. The `non_conforming` event now records the problems.
+  - The benchmark restarts from scratch in `hy4-eff2`, with the same design, conditions, n, outcomes and correctness gate as registered for 142e858.
