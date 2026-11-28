@@ -54,6 +54,8 @@ CONDITIONS = {
     "parallel-regions-efficient": ["--mode", "enforce", "--regions", "--lean", "--trim-outputs"],
     "parallel-regions-efficient-plus": ["--mode", "enforce", "--regions", "--lean", "--trim-outputs",
                                         "--fresh-repairs", "--gate-variant", "none"],
+    "parallel-regions-efficient-fresh": ["--mode", "enforce", "--regions", "--lean", "--trim-outputs",
+                                         "--fresh-repairs"],
     "parallel-integrator-trim": ["--mode", "off", "--trim-outputs"],
     "parallel-peeronly": ["--mode", "enforce", "--peer-merge", "--no-contracts"],
     "parallel-fileleases": ["--mode", "enforce", "--file-leases", "--no-contracts"],
