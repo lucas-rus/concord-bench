@@ -221,3 +221,13 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
   - Hand-off turns also state what came in and the agent's check result (7676557).
   - `--gate-variant none` is set aside, because conflict resolution needs reasoning; it may be tested on its own later.
   - New pilot `hy4-effpilot3` on 0c24b52: `parallel-regions-efficient` paired with `parallel-regions-efficient-fresh` (plus `--fresh-repairs`) over 2 rounds, with the same correctness gate, judged on coordination tokens (`bench/tokens.py`), time and cost.
+- **2026-11-28: pilot 3, first round (concord 0c24b52).**
+
+  | Condition | Examples passed | Conflicts | Time | Tokens (work / coordination) | Cost |
+  |---|---|---|---|---|---|
+  | `parallel-regions-efficient` | 652/652 | 0 | 17.4 min | 50.8M (42.9 / 7.9) | $0.37 |
+  | `parallel-regions-efficient-fresh` | 652/652 | 0 | 25.7 min | 61.0M (41.4 / 19.6) | $0.43 |
+
+  - No block-limit let-throughs. Conflict-marker merges (`region_handoff_markers`) occurred once and twice and were resolved.
+  - **`--fresh-repairs` does not pay off:** repair steps read half as much (45K against 90K tokens per step), but the fresh agents needed more than twice the steps (65 against 28) to re-orient, 2.9M against 2.5M tokens in total. Round 2 of the fresh variant is skipped. The flag stays available but off.
+  - The fresh run's larger coordination total came from its gate turns (172 against 58 steps, more region conflicts in that run), not from the repairs.
