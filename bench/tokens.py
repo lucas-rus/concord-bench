@@ -11,7 +11,9 @@ Usage:
     python bench/tokens.py RESULTS_DIR [RESULTS_DIR ...] --out tokens.jsonl
 
 `total` is all tokens the model processed (input + cache read + cache write +
-output + reasoning); `billable_in` is input that was not a cache read.
+output + reasoning); `billable_in` is input that was not a cache read; `work`
+is each agent's first turn on its ticket and `coordination` everything else
+(gate turns, repairs, the integrator agent).
 """
 
 from __future__ import annotations
@@ -40,10 +42,17 @@ def cost(t: dict, model: str) -> float | None:
 
 
 def run_tokens(run_dir: Path) -> dict:
-    t = {"input": 0, "cache_read": 0, "cache_write": 0, "output": 0, "reasoning": 0, "steps": 0, "calls_by_role": {}}
+    t = {"input": 0, "cache_read": 0, "cache_write": 0, "output": 0, "reasoning": 0, "steps": 0, "calls_by_role": {},
+         "work": 0, "coordination": 0}
     for stream in sorted(run_dir.glob("runs/*/*/agents/*.turn*.jsonl")):
         role = stream.parts[-4]  # team, integrator, or the sequential ticket
         role = role if role in ("team", "integrator") else "sequential"
+        # Each agent's first turn of its first attempt is its own ticket work;
+        # every later turn (gate turns, repairs) and the integrator agent are
+        # coordination.
+        attempt_turn = stream.name.rsplit(".turn", 1)
+        first = attempt_turn[0].endswith(".0") and attempt_turn[1] == "1.jsonl"
+        bucket = "work" if role != "integrator" and first else "coordination"
         for line in stream.read_text(errors="replace").splitlines():
             if '"step_finish"' not in line:
                 continue
@@ -59,6 +68,8 @@ def run_tokens(run_dir: Path) -> dict:
             t["output"] += tok.get("output", 0)
             t["reasoning"] += tok.get("reasoning", 0)
             t["steps"] += 1
+            t[bucket] += (tok.get("input", 0) + cache.get("read", 0) + cache.get("write", 0)
+                          + tok.get("output", 0) + tok.get("reasoning", 0))
             t["calls_by_role"][role] = t["calls_by_role"].get(role, 0) + 1
     t["total"] = t["input"] + t["cache_read"] + t["cache_write"] + t["output"] + t["reasoning"]
     t["billable_in"] = t["input"] + t["cache_write"]
