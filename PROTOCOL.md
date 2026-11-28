@@ -206,3 +206,8 @@ A run is **invalid** and repeated if any agent ended with a provider quota or ra
     - Check commands are bounded by a timeout (f01d05f).
   - The benchmark harness passes `--no-lean` to the non-lean enforce conditions whenever the binary supports it, so `parallel-regions` keeps measuring the previous gate. Older frozen builds are unaffected.
   - Next: `parallel-integrator-trim` (2 runs, f01d05f) for comparison with the integrator, then the efficiency benchmark is re-registered on the 0.2.0 build.
+- **2026-11-28: pilot of cheaper gate turns (exploratory).** Concord 5ba51c4 adds two opt-in switches:
+  - `--fresh-repairs`: a repair-pass turn starts a new session with the ticket and the failing tests, instead of resuming the agent's conversation.
+  - `--gate-variant`: gate turns and repairs run on a lighter model variant (`opencode-go/hy4-flash-free#none`, no reasoning).
+  - Pilot `hy4-effpilot2`: condition `parallel-regions-efficient-plus` (efficient plus both switches) paired with `parallel-regions-efficient` on the same build, 2 rounds, started after `parallel-integrator-trim`.
+  - Correctness gate as before: any run below 652/652 or with a merge conflict stops the pilot and reverts the change. The aim is fewer tokens, lower cost and no loss of time against the integrator.
